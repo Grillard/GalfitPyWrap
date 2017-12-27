@@ -91,13 +91,17 @@ def rungalfit(infile, outfile='out.fits', timeout=300, verb=True):
         return pout, [-1, -1, -1, -1], [], 124
     try:
         outfit = pyfits.open(outfile)
+        if len(outfit)==1:
+            imgi=0
+            if verb: print 'Only the model was found, no fitting perfomed'
+        else: imgi=2
         models = []
-        for mod in [x for x in outfit[2].header if 'COMP' in x]:
-            models.append({mod: outfit[2].header[mod]})
-            for key in [x for x in outfit[2].header if mod[5:]+'_' in x]:
+        for mod in [x for x in outfit[imgi].header if 'COMP' in x]:
+            models.append({mod: outfit[imgi].header[mod]})
+            for key in [x for x in outfit[imgi].header if mod[5:]+'_' in x]:
                 if verb:
-                    print key, outfit[2].header[key]
-                models[-1][key] = outfit[2].header[key]
+                    print key, outfit[imgi].header[key]
+                models[-1][key] = outfit[imgi].header[key]
         return pout, outfit, models, 0
     except Exception as E:
         if verb:
@@ -123,7 +127,7 @@ def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **
     tcall = 'sex -c {0}{3}.sex {1} -CATALOG_NAME {2}.cat -PARAMETERS_NAME {0}{3}.param -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
         pPath, scifile, out, ifiles)
     for key in kwargs:
-        tcall.append(' -{0} {1}'.format(key,kwargs[key]))
+        tcall=tcall+' -{0} {1}'.format(key,kwargs[key])
 
     p = Popen(tcall.split(), stdout=PIPE, stderr=PIPE)
     p.wait()
@@ -162,15 +166,21 @@ def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **
     return amsk, models, torem
 
 
-def maskfiles(sci, wht, msk, fout=["tsci.fits", "twht.fits"]):
+def maskfiles(sci, msk, wht=None, fout=["tsci.fits", "twht.fits"], verb=True):
+    overify='fix' if verb else 'silentfix'
     Popen(["rm", fout[0]], stderr=PIPE)
-    Popen(["rm", fout[1]], stderr=PIPE)
     scifits = pyfits.open(sci)
     scifits[0].data *= msk
-    scifits.writeto(fout[0], clobber=True)
-    whtfits = pyfits.open(wht)
-    whtfits[0].data *= msk
-    whtfits.writeto(fout[1], clobber=True)
+    scifits.writeto(fout[0], clobber=True,output_verify=overify)
     scifits.close()
+    if wht is not None:
+        Popen(["rm", fout[1]], stderr=PIPE)
+        whtfits = pyfits.open(wht)
+        whtfits[0].data *= msk
+    else:
+        wht=np.zeros(msk.shape)
+        wht[msk!=1]=1
+        whtfits = pyfits.HDUList([pyfits.PrimaryHDU(wht)])
+    whtfits.writeto(fout[1], clobber=True,output_verify=overify)
     whtfits.close()
     return fout
