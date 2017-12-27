@@ -26,8 +26,12 @@ By calling `CreateFile` you create the input file needed to run galfit. For this
 
 Finally, one run galfit by passing the created file to `rungalfit`. This will create all the galfit outputs in the location of the input file, and will return galfit stdout, the open fits file output by galfit, the best fit models and an exit signal (0: success, 1: error, 124: timeout)
 
+One can also ask galfit to produce the given model by giving the `CreateFile` function `opt=1`.
+
 To see an example of this scheme please see the examples section.
 
 ### Sextractor pass
 
 There is an option to run sextractor to mask undesired objects and to create initial condition models. This can be achieved by running sxmsk, which returns a mask, a list of models and a hierarchy tree with the objects to remove given different masking options (0: no mask, 1: central object only, 2: central and adjacent objects. This is given by nrem parameter). The sextractor configuration files and parameters files needs to be defined by the user, the only requirement is that it creates a segmentation image.
+
+Currently, this is designed for situations in which the desired object is at the center of the image only.
