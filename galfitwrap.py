@@ -110,7 +110,7 @@ def rungalfit(infile, outfile='out.fits', timeout=300, verb=True):
         return pout, [-1, -1, -1, -1], [], 1
 
 
-def sxmsk(scifile, whtfile, pPath, out='tsex', nrem=1, verb=True):
+def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **kwargs):
     '''
         Sextractor pass to mask objects that can affect the fit
         Simple approach, almost default config
@@ -120,8 +120,11 @@ def sxmsk(scifile, whtfile, pPath, out='tsex', nrem=1, verb=True):
             2 means central and overlapping objects are masked
         pPath is the location of the sextractor config and params files
     '''
-    tcall = 'sex -c {0}galfitmask.sex {1} -CATALOG_NAME {2}.cat -WEIGHT_IMAGE {3} -PARAMETERS_NAME {0}galfitmask.param -FILTER_NAME {0}default.conv -CHECKIMAGE_NAME {2}.fits'.format(
-        pPath, scifile, out, whtfile)
+    tcall = 'sex -c {0}{3}.sex {1} -CATALOG_NAME {2}.cat -PARAMETERS_NAME {0}{3}.param -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
+        pPath, scifile, out, ifiles)
+    for key in kwargs:
+        tcall.append(' -{0} {1}'.format(key,kwargs[key]))
+
     p = Popen(tcall.split(), stdout=PIPE, stderr=PIPE)
     p.wait()
     if verb:
