@@ -114,18 +114,23 @@ def rungalfit(infile, outfile='out.fits', timeout=300, verb=True):
         return pout, [-1, -1, -1, -1], [], 1
 
 
-def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **kwargs):
+def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True, **kwargs):
     '''
         Sextractor pass to mask objects that can affect the fit
-        Simple approach, almost default config
+        scfile is the input fits file, you can give full path.
+        infile is the input config file to run sextractor
+        out is the output name, you can give full path.
+            .cat will be added to the output catalogue
+            .fits will be added the output segmentation image
         nrem is the removal of central object.
-            0 means all objects are masked
+            0 means no objects are masked
             1 means only the central object is masked
             2 means central and overlapping objects are masked
-        pPath is the location of the sextractor config and params files
+        verb is to print output
+        you can give any other parameters to the sextractor call with kwargs.
     '''
-    tcall = 'sex -c {0}{3}.sex {1} -CATALOG_NAME {2}.cat -PARAMETERS_NAME {0}{3}.param -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
-        pPath, scifile, out, ifiles)
+    tcall = 'sex -c {0} {1} -CATALOG_NAME {2}.cat -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
+        infile, scifile, out, ifiles)
     for key in kwargs:
         tcall=tcall+' -{0} {1}'.format(key,kwargs[key])
 
@@ -142,7 +147,7 @@ def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **
     if idx == 0:
         if verb:
             print 'Something wrong here, no object at the center!'
-        return np.ones(mskfit[0].shape), [], {}
+        return np.ones(mskfit[0].shape), []
     '''this is the silliest way to do this'''
     t = []
     for el in np.where(mskfit[0].data.ravel() == idx)[0]:
@@ -163,7 +168,7 @@ def sxmsk(scifile, pPath, ifiles='galfitmask', out='tsex', nrem=1, verb=True, **
             models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
                            3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
                            5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0, 'Comment': 'Sersic {0}'.format(i)})
-    return amsk, models, torem
+    return amsk, models
 
 
 def maskfiles(sci, msk, wht=None, fout=["tsci.fits", "twht.fits"], verb=True):
