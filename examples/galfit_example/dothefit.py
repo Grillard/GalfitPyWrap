@@ -51,7 +51,7 @@ showme3(oimg)
 #configuration files. In the folder there are standard configuration files
 #that can be used for this example.
 
-msk,sxmods,tr=GalfitPyWrap.sxmsk('gal.fits', 'galfitmask.sex', nrem=1, verb=True)
+msk,sxmods=GalfitPyWrap.sxmsk('gal.fits', 'galfitmask.sex', nrem=1, verb=True)
 scifile,badpix=GalfitPyWrap.maskfiles('gal.fits', msk)
 #Here the models are provided by the sextractor pass
 #If no weight image is given to maskfiles, then a badpixel fits file will be generated, but it should be given as that:
