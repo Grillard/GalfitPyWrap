@@ -130,7 +130,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True, **kwargs):
         you can give any other parameters to the sextractor call with kwargs.
     '''
     tcall = 'sex -c {0} {1} -CATALOG_NAME {2}.cat -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
-        infile, scifile, out, ifiles)
+        infile, scifile, out)
     for key in kwargs:
         tcall=tcall+' -{0} {1}'.format(key,kwargs[key])
 
