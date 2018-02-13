@@ -114,7 +114,7 @@ def rungalfit(infile, outfile='out.fits', timeout=300, verb=True):
         return pout, [-1, -1, -1, -1], [], 1
 
 
-def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True, **kwargs):
+def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs):
     '''
         Sextractor pass to mask objects that can affect the fit
         scfile is the input fits file, you can give full path.
@@ -123,10 +123,12 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True, **kwargs):
             .cat will be added to the output catalogue
             .fits will be added the output segmentation image
         nrem is the removal of central object.
-            0 means no objects are masked
-            1 means only the central object is masked
-            2 means central and overlapping objects are masked
+            0 : all objects are masked
+            1 : all but the central object are masked
+            2 : all but the central and overlapping objects are masked
+            3 : no objects are masked
         verb is to print output
+        retfull is to return the original mask
         you can give any other parameters to the sextractor call with kwargs.
     '''
     tcall = 'sex -c {0} {1} -CATALOG_NAME {2}.cat -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
@@ -152,22 +154,28 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True, **kwargs):
     t = []
     for el in np.where(mskfit[0].data.ravel() == idx)[0]:
         elidx = np.unravel_index(el, mskfit[0].data.shape)
-        t.extend(mskfit[0].data[elidx[0]-1:elidx[0] +
-                                1, elidx[1]-1:elidx[1]+1].ravel())
-    t = list(set(t))
-    t.remove(idx)
-    if 0 in t:
-        t.remove(0)
+        cutout=mskfit[0].data[elidx[0]-1:elidx[0] + 1, elidx[1]-1:elidx[1]+1].ravel()
+        for i in cutout:
+            if i not in t and i!=0 and i!=idx: t.append(i)
     ''''''
-    torem = {0: [], 1: [idx], 2: t}
+    others=np.unique(mskfit[0].data)
+    idxs=(others!=idx) & (others!=0)
+    for i in t:idxs=idxs & (others!=i)
+    others=others[idxs]
+    torem = {0: [], 1: [idx], 2: t, 3:others}
+    txt = {0:'',1: 'central', 2:'overlapping', 3:'other'}
     models = []
     for i in range(nrem+1):
         for j in torem[i]:
-            amsk[mskfit[0].data == j] = 1
+            amsk[mskfit[0].data == j] = j
             jidx = np.where(sexcat['NUMBER'] == j)[0][0]
             models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
                            3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
-                           5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0, 'Comment': 'Sersic {0}'.format(i)})
+                           5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
+                           'mskidx': i,'origin':txt[i]})
+    if retfull:
+        return amsk, models
+    amsk[amsk!=0]=1
     return amsk, models
 
 
