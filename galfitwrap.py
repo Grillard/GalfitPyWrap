@@ -172,7 +172,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs
             models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
                            3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
                            5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
-                           'mskidx': i,'origin':txt[i]})
+                           'mskidx': j,'origin':txt[i]})
     if retfull:
         return amsk, models
     amsk[amsk!=0]=1
