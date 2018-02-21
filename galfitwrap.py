@@ -64,13 +64,11 @@ def CreateFile(Iimg, region, models, sky='Default', fout=None, **kwargs):
     if sky != 'None':
         emodels.append(sky)
     for model in emodels:
-        if 'Comment' in model:
-            fout.write('#{0} \n'.format(model['Comment']))
         for i in np.argsort(model.keys()):
             key = model.keys()[i]
-            if key == 'Comment':
-                continue
-            fout.write('{0}) {1} \n'.format(key, model[key]))
+            s='{0}) {1} \n'.format(key, model[key])
+            if key in ['Comment','mskidx','origin']:s='#'+s
+            fout.write(s)
     fout.close()
     return 0
 
