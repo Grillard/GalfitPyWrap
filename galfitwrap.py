@@ -62,7 +62,7 @@ def CreateFile(Iimg, region, models, sky='Default', fout=None, **kwargs):
         if sky=='Default':
             sky = {0: 'sky', 1: '1 1', 2: '0 0',
                    3: '0 0', 'Z': 0, 'Comment': 'StandardSky'}
-        if 'sky'!='None':
+        if sky!='None':
             emodels.append(sky)
     for model in emodels:
         for i in np.argsort(model.keys()):
