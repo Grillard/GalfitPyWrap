@@ -141,8 +141,9 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs
         for l in p.stderr.readlines():
             print l[:-1]
     mskfit = pyfits.open("{0}.fits".format(out))
+    mskfit[0].data+=1
     amsk = np.ones(mskfit[0].data.shape)
-    amsk[mskfit[0].data != 0] = 0
+    amsk[mskfit[0].data != 1] = 0
     sexcat = pyfits.open("{0}.cat".format(out))[2].data
     idx = mskfit[0].data[mskfit[0].data.shape[0]/2, mskfit[0].data.shape[1]/2]
     if idx == 0:
@@ -155,10 +156,10 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs
         elidx = np.unravel_index(el, mskfit[0].data.shape)
         cutout=mskfit[0].data[elidx[0]-1:elidx[0] + 1, elidx[1]-1:elidx[1]+1].ravel()
         for i in cutout:
-            if i not in t and i!=0 and i!=idx: t.append(i)
+            if i not in t and i!=1 and i!=idx: t.append(i)
     ''''''
     others=np.unique(mskfit[0].data)
-    idxs=(others!=idx) & (others!=0)
+    idxs=(others!=idx) & (others!=1)
     for i in t:idxs=idxs & (others!=i)
     others=others[idxs]
     torem = {0: [], 1: [idx], 2: t, 3:others}
@@ -167,7 +168,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs
     for i in range(nrem+1):
         for j in torem[i]:
             amsk[mskfit[0].data == j] = j
-            jidx = np.where(sexcat['NUMBER'] == j)[0][0]
+            jidx = np.where(sexcat['NUMBER'] == j-1)[0][0]
             models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
                            3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
                            5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
