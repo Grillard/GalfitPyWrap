@@ -113,7 +113,7 @@ def rungalfit(infile, outfile='out.fits', timeout=300, verb=True):
         return pout, [-1, -1, -1, -1], [], 1
 
 
-def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs):
+def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=None, **kwargs):
     '''
         Sextractor pass to mask objects that can affect the fit
         scfile is the input fits file, you can give full path.
@@ -145,8 +145,9 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False, **kwargs
     amsk = np.ones(mskfit[0].data.shape)
     amsk[mskfit[0].data != 1] = 0
     sexcat = pyfits.open("{0}.cat".format(out))[2].data
-    idx = mskfit[0].data[mskfit[0].data.shape[0]/2, mskfit[0].data.shape[1]/2]
-    if idx == 0:
+    if center is None:center=[mskfit[0].data.shape[0]/2, mskfit[0].data.shape[1]/2]
+    idx = mskfit[0].data[center[0],center[1]]
+    if idx == 1:
         if verb:
             print 'Something wrong here, no object at the center!'
         return np.ones(mskfit[0].shape), []
