@@ -145,7 +145,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
     amsk = np.ones(mskfit[0].data.shape)
     amsk[mskfit[0].data != 1] = 0
     sexcat = pyfits.open("{0}.cat".format(out))[2].data
-    if center is None:center=[mskfit[0].data.shape[0]/2, mskfit[0].data.shape[1]/2]
+    if center is None:center=[mskfit[0].data.shape[1]/2, mskfit[0].data.shape[0]/2]
     idx = mskfit[0].data[center[0],center[1]]
     if idx == 1:
         if verb:
