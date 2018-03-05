@@ -129,6 +129,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
         verb is to print output
         retfull is to return the original mask
         you can give any other parameters to the sextractor call with kwargs.
+        center is given as py,px
     '''
     tcall = 'sex -c {0} {1} -CATALOG_NAME {2}.cat -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME {2}.fits'.format(
         infile, scifile, out)
@@ -145,7 +146,7 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
     amsk = np.ones(mskfit[0].data.shape)
     amsk[mskfit[0].data != 1] = 0
     sexcat = pyfits.open("{0}.cat".format(out))[2].data
-    if center is None:center=[mskfit[0].data.shape[1]/2, mskfit[0].data.shape[0]/2]
+    if center is None:center=[mskfit[0].data.shape[0]/2, mskfit[0].data.shape[1]/2]
     idx = mskfit[0].data[center[0],center[1]]
     if idx == 1:
         if verb:
