@@ -142,7 +142,11 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
         for l in p.stderr.readlines():
             print l[:-1]
     mskfit = pyfits.open("{0}.fits".format(out))
-    mskfit[0].data+=1
+    try:
+        mskfit[0].data+=1
+    except:
+        mskfit[0].data=mskfit[1].data
+        mskfit[0].data+=1
     amsk = np.ones(mskfit[0].data.shape)
     amsk[mskfit[0].data != 1] = 0
     sexcat = pyfits.open("{0}.cat".format(out))[2].data
