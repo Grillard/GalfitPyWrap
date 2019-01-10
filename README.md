@@ -41,6 +41,6 @@ Currently, this is designed for situations in which the desired object is at the
 
 I now added an empirical elliptical fitting procedure to the library. This can be found in Ellipse.py. The code is basically fitting ellipses to isophotes of a 2D image, it allows for boxy profiles and profiles modified with 3rd and 4th order of a Fourier series. An example on how to use on fake generated profiles can be found in the examples section, which produces the following results:
 
-![alt text][https://github.com/Grillard/GalfitPyWrap/examples/ellipse_example/res.png "Ellipse results"]
+![alt text][https://github.com/Grillard/GalfitPyWrap/blob/master/examples/ellipse_example/res.png "Ellipse results"]
 
 Disclaimer: The ellipse fitting procedure is in active development, so please use it at your own discretion.
