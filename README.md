@@ -35,3 +35,12 @@ To see an example of this scheme please see the examples section.
 There is an option to run sextractor to mask undesired objects and to create initial condition models. This can be achieved by running sxmsk, which returns a mask, a list of models and a hierarchy tree with the objects to remove given different masking options (0: no mask, 1: central object only, 2: central and adjacent objects. This is given by nrem parameter). The sextractor configuration files and parameters files needs to be defined by the user, the only requirement is that it creates a segmentation image.
 
 Currently, this is designed for situations in which the desired object is at the center of the image only.
+
+
+### Empirical elliptical fitting
+
+I now added an empirical elliptical fitting procedure to the library. This can be found in Ellipse.py. The code is basically fitting ellipses to isophotes of a 2D image, it allows for boxy profiles and profiles modified with 3rd and 4th order of a Fourier series. An example on how to use on fake generated profiles can be found in the examples section, which produces the following results:
+
+![alt text][https://github.com/Grillard/GalfitPyWrap/examples/ellipse_example/res.png "Ellipse results"]
+
+Disclaimer: The ellipse fitting procedure is in active development, so please use it at your own discretion.
