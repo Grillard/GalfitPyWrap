@@ -1,6 +1,14 @@
 #utils for running ellipse
 import numpy as np
 
+def isit(A):
+    #Return True if A is iterable
+    try:
+        iter(A)
+    except:
+        return False
+    return True
+
 def middlebin(A):
     #Return the middle bin of an array
     return (A[1:]+A[:-1])*0.5

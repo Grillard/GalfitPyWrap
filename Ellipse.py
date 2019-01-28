@@ -1,6 +1,5 @@
 #Empirical fitting procedure for galaxies
 #Works by fitting ellipses to isophotes
-
 import numpy as np
 import matplotlib.pyplot as plt
 import utils as UU
@@ -10,10 +9,17 @@ from matplotlib.path import Path
 
 def gell(x,y,x0,y0,q,theta,c0):
     #Radius of a given x,y in a generalized boxy elliptic profile
+    #defined as:
+    #(x-x0)**(2+c0)+((y-y0)/q)**(2+c0)=r0
+    #plus a rotation with [[c,s],[-s,c]]
+    #this means:
+    #x=r*cos(t)**(2/(2+c0))+x0
+    #y=q*r*sin(t)**(2/(2+c0))+y0
+    #Plus a rotation
+    #theta 0 faces west (or x>0)
     sh=x.shape
-    theta=theta-np.pi/2
     M=np.array([(x.ravel()-x0),(y.ravel()-y0)])
-    c=np.array([[np.cos(theta)/q,np.sin(theta)/q],[-np.sin(theta),np.cos(theta)]])
+    c=np.array([[np.cos(theta),np.sin(theta)],[-np.sin(theta)/q,np.cos(theta)/q]])
     M=np.abs(np.dot(c,M))**(c0+2)
     return ((M[0,:]+M[1,:])**(1/(c0+2))).reshape(sh)
 
@@ -21,43 +27,118 @@ def gella4(x,y,x0,y0,q,theta,a):
     #Radius of a given x,y in a generalized elliptic profile modified with third and fourth elements of a fourier series.
     # a=[a3,b3,a4,b4]
     sh=x.shape
-    theta=theta-np.pi/2
+    # th=np.arctan2(y.ravel(),x.ravel())
     M=np.array([(x.ravel()-x0),(y.ravel()-y0)])
-    c=np.array([[np.cos(theta)/q,np.sin(theta)/q],[-np.sin(theta),np.cos(theta)]])
-    M=np.abs(np.dot(c,M))**2
-    th=np.arctan2((y.ravel()-y0),(x.ravel()-x0)*q)
-    ff=1+np.sum([(a[2*i]*np.cos((i+3)*th)+a[2*i+1]*np.sin((i+3)*th)) for i in range(2)],0)
-    return (np.sqrt(M[0,:]+M[1,:])*ff).reshape(sh)
+    c=np.array([[np.cos(theta),np.sin(theta)],[-np.sin(theta)/q,np.cos(theta)/q]])
+    # M=np.dot(c,M)**2
+    M=np.dot(c,M)
+    th=np.arctan2(M[1,:],M[0,:])
+    ff=1.+np.sum([(a[2*i]*np.cos((i+3)*th)+a[2*i+1]*np.sin((i+3)*th)) for i in range(2)],0)
+    return (np.sqrt(M[0,:]**2+M[1,:]**2)/ff).reshape(sh)
+    # M=M**2
+    # a=-np.array(a)
+    # ff=1.+np.sum([(a[2*i]*np.cos((i+3)*th)+a[2*i+1]*np.sin((i+3)*th)) for i in range(2)],0)
+    # return (np.sqrt(M[0,:]+M[1,:])*ff).reshape(sh)
+
+def getell(r,x0,y0,q,theta,c0,n=100):
+    #Get ellipse at given radius
+    t=np.linspace(0,np.pi/2,n,endpoint=True)
+    xr0=r*np.cos(t)**(2./(2.+c0))
+    yr0=q*r*np.sin(t)**(2./(2.+c0))
+    xr1=np.array(list(xr0)+list((-xr0)[::-1])+list((-xr0))+list(xr0[::-1]))
+    yr1=np.array(list(yr0)+list(yr0[::-1])+list(-yr0)+list((-yr0)[::-1]))
+    MM=np.array([(xr1.ravel()),(yr1.ravel())])
+    c=np.array([[np.cos(-theta),np.sin(-theta)],[-np.sin(-theta),np.cos(-theta)]])
+    MM=np.dot(c,MM)
+    xr2=(MM[0,:]+x0)
+    yr2=(MM[1,:]+y0)
+    return xr2,yr2
+
+def getella4(r,x0,y0,q,theta,a,n=100):
+    #Get ellipse at given radius
+    # a=[a3,b3,a4,b4]
+    a=np.array(a)
+    th=np.linspace(0,2*np.pi,n,endpoint=True)
+    ff=1.+np.sum([(a[2*i]*np.cos((i+3)*th)+a[2*i+1]*np.sin((i+3)*th)) for i in range(2)],0)
+    xr0=r*np.cos(th)*ff
+    yr0=q*r*np.sin(th)*ff
+    # xr1=np.array(list(xr0)+list((-xr0)[::-1])+list((-xr0))+list(xr0[::-1]))
+    # yr1=np.array(list(yr0)+list(yr0[::-1])+list(-yr0)+list((-yr0)[::-1]))
+    MM=np.array([(xr0.ravel()),(yr0.ravel())])
+    c=np.array([[np.cos(-theta),np.sin(-theta)],[-np.sin(-theta),np.cos(-theta)]])
+    MM=np.dot(c,MM)
+    xr2=MM[0,:]+x0
+    yr2=MM[1,:]+y0
+    return xr2,yr2
+
+def eeint(y):
+    keys=[x for x in y if UU.isit(y[x]) and len(y[x])==len(y['r'])]
+    ellarr2={}
+    for key in keys:
+        if key=='r':
+            ellarr2[key]=interp1d(np.append([0],y[key]),np.append([0],y[key]))
+        elif key=='a':
+            ellarr2[key]=[interp1d(np.append([0],y['r']),np.append([y[key][0][i]],y[key][:,i])) for i in range(4)]
+        else:
+            ellarr2[key]=interp1d(np.append([0],y['r']),np.append([y[key][0]],y[key]))
+    return ellarr2
 
 def imgfee(ee,E,sh,l0=500,intzoom=1,pick=1):
     #Create a 2D image from the output of Ellipse
     #E is the extent of the image
     #sh is the shape of the image
+    #ee is the interpolated profiles returned by ellipse
+
     riall=[]
-    rival=[]
-    riarr=[]
-    r=np.sort(np.append(ee[0]['r'],np.linspace(0,np.max(ee[0]['r']),l0)))
+    r=np.sort(np.append(ee['r'].x,np.linspace(0,np.max(ee['r'].x),l0)))
     xx2,yy2=np.meshgrid(UU.middlebin(np.linspace(E[0],E[1],sh[1]*intzoom+1)),UU.middlebin(np.linspace(E[2],E[3],sh[0]*intzoom+1)))
+    Pxy=np.array([xx2.ravel(),yy2.ravel()]).T
+    rieff=np.zeros(xx2.shape)
     for rii in r:
         if pick==0:
-            ri=gell(xx2,yy2,ee[2]['x0'](rii),ee[2]['y0'](rii),ee[2]['q'](rii),ee[2]['theta'](rii),0.)
+            e=getell(ee['r'](rii),ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),0.)
+            idxs0=(xx2<np.max(e[0]))&(xx2>np.min(e[0]))&(yy2<np.max(e[1]))&(yy2>np.min(e[1]))
+            ri=gell(xx2[idxs0],yy2[idxs0],ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),0.)
         elif pick==1:
-            ri=gell(xx2,yy2,ee[2]['x0'](rii),ee[2]['y0'](rii),ee[2]['q'](rii),ee[2]['theta'](rii),ee[2]['c0'](rii))
+            e=getell(ee['r'](rii),ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),ee['c0'](rii))
+            idxs0=(xx2<np.max(e[0]))&(xx2>np.min(e[0]))&(yy2<np.max(e[1]))&(yy2>np.min(e[1]))
+            ri=gell(xx2[idxs0],yy2[idxs0],ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),ee['c0'](rii))
         elif pick==2:
-            ri=gella4(xx2,yy2,ee[2]['x0'](rii),ee[2]['y0'](rii),ee[2]['q'](rii),ee[2]['theta'](rii),[0.,ee[2]['a'][0](rii),ee[2]['a'][0](rii),0.])
-        # ri=gell(xx2,yy2,ee[2]['x0'](rii),ee[2]['y0'](rii),ee[2]['q'](rii),ee[2]['theta'](rii),tc0)
+            e=getella4(ee['r'](rii),ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),[0.,ee['a'][0](rii),ee['a'][0](rii),0.])
+            idxs0=(xx2<np.max(e[0]))&(xx2>np.min(e[0]))&(yy2<np.max(e[1]))&(yy2>np.min(e[1]))
+            ri=gella4(xx2[idxs0],yy2[idxs0],ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),[0.,ee['a'][0](rii),ee['a'][0](rii),0.])
         idxs=(ri<rii)
-        ri[idxs]=ee[2]['val'](rii)
+        ri[idxs]=ee['val'](rii)
         ri[~idxs]=0.
-        riall.append(ri)
-        rival.append(ee[2]['val'](rii))
-        riarr.append(rii)
-    rieff=np.max(riall,0)
+        rieff[idxs0]=np.max([ri,rieff[idxs0]],0)
+        riall.append([ri,idxs0])
+    # for rii in r:
+    #     if pick==0:
+    #         ri=gell(xx2,yy2,ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),0.)
+    #     elif pick==1:
+    #         ri=gell(xx2,yy2,ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),ee['c0'](rii))
+    #     elif pick==2:
+    #         ri=gella4(xx2,yy2,ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),[0.,ee['a'][0](rii),ee['a'][0](rii),0.])
+    #     # ri=gell(xx2,yy2,ee['x0'](rii),ee['y0'](rii),ee['q'](rii),ee['theta'](rii),tc0)
+    #     idxs=(ri<rii)
+    #     ri[idxs]=ee['val'](rii)
+    #     ri[~idxs]=0.
+    #     riall.append(ri)
+    # rieff=np.max(riall,0)
+    #Curve of Growth
+    cog={'r':r,'cl':[],'A':[]}#,'idxs':[]
+    for rii in riall:
+        ###
+        idxs=(rii[0]!=0)
+        cog['cl'].append(np.sum(rieff[rii[1]][idxs]))
+        cog['A'].append(np.sum(idxs))
+        # cog['idxs'].append(idxs)
+    for key in cog:cog[key]=np.array(cog[key])
     from scipy.ndimage import zoom
     rieffnew=zoom(rieff,1./intzoom)
-    return rieffnew,rival,riarr
+    return rieffnew,cog
 
-def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,Cts=False,pick=1,extrapolate=0.,tol=1,sclip=True):
+def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,tol=1,sclip=True):
     # sciimg is a 2D array
     # pick is 0 for elliptical profile, 1 for c0 profile, and 2 for a4 profile
     # retfun returns a linear interpolation function of the profiles
@@ -262,35 +343,23 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,Cts=False,pick=1,extrapo
         y['r'].append(np.median(r))
         y['DL'].append(x2b['fun']/xf['fun'])
         y['rc2'].append(xf['fun']/len(Cteff[:,0]))
-        if img or Cts:
+        Ctout.append(Cteff)
+        if img:
             if pick==0:
                 ri=gell(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],0.)
+                Ctf1=getell(np.median(r),xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],0.)
             elif pick==1:
                 ri=gell(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4])
+                Ctf1=getell(np.median(r),xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4])
             elif pick==2:
                 # ri=gella4(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4:])
                 ri=gella4(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[0.,xf['x'][4],xf['x'][5],0.])
-            v=np.median(r) if np.median(r)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
-            Ctf1=UU.getContours(ri,v,E)
-            Ctout.append([Ctf1[0],Cteff])
-            # if len(y['x0'])==5:
-            #     print xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4]
-            #     return xx,yy,ri,E,v,Ctf1
-            # ri=gell(xx,yy,x2b['x'][0],x2b['x'][1],x2b['x'][2],0.,x2b['x'][3])
-            # v=np.median(r1) if np.median(r1)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
+                Ctf1=getella4(np.median(r),xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[0.,xf['x'][4],xf['x'][5],0.])
+            # v=np.median(r) if np.median(r)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
             # Ctf1=UU.getContours(ri,v,E)
-            # ri=gell(xx,yy,x3['x'][0],x3['x'][1],x3['x'][2],x3['x'][3],x3['x'][4])
-            # v=np.median(r2) if np.median(r2)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
-            # Ctf2=UU.getContours(ri,v,E)
-            # ri=gella4(xx,yy,x4['x'][0],x4['x'][1],x4['x'][2],x4['x'][3],x4['x'][4])
-            # v=np.median(r3) if np.median(r3)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
-            # Ctf3=UU.getContours(ri,v,E)
-            # Ctout.append([Ctf1[0],Ctf2[0],Ctf3[0]])
-
-        if img:
-            plt.imshow(sciimg,extent=E,origin='lower')
+            plt.imshow(np.arcsinh(sciimg),extent=E,origin='lower')
             plt.plot(Cteff[:,0],Cteff[:,1],color='red',lw=2)
-            plt.plot(Ctf1[0][:,0],Ctf1[0][:,1],c='black',lw=1.)
+            plt.plot(Ctf1[0],Ctf1[1],c='black',lw=1.)
 
     y['val0']=np.max(sciimg[mskimg==1])
     keys=['r','val','x0','y0','theta','q']
@@ -333,15 +402,8 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,Cts=False,pick=1,extrapo
     tt=np.median(y['theta'])
     y['theta'][y['theta']>tt+np.pi/2]-=np.pi
     y['theta'][y['theta']<tt-np.pi/2]+=np.pi
-    rett=[y,Ctout]
+    rett=[y,Ctout,eeint(y)]
     # if Cts: rett.append(Ctout)
-    ellarr2={}
-    for key in keys:
-        if key=='r':
-            ellarr2[key]=interp1d(np.append([0],y[key]),np.append([0],y[key]))
-        elif key=='a':
-            ellarr2[key]=[interp1d(np.append([0],y['r']),np.append([y[key][0][i]],y[key][:,i])) for i in range(4)]
-        else:
-            ellarr2[key]=interp1d(np.append([0],y['r']),np.append([y[key][0]],y[key]))
-    rett.append(ellarr2)
+    # ellarr2=
+    # rett.append(ellarr2)
     return rett

@@ -16,7 +16,7 @@ H=h1+h2
 #now the fitting
 from GalfitPyWrap import Ellipse as EE
 ee=EE.Ellipse(H,E=E)
-eee=EE.imgfee(ee,E,H.shape)
+eee=EE.imgfee(ee[2],E,H.shape)
 
 plt.figure()
 plt.subplot(131)
@@ -47,10 +47,10 @@ msk[h2>1]=0
 
 #First the main blob masking the small blob:
 ee1=EE.Ellipse(H,msk,E=E)
-eee1=EE.imgfee(ee1,E,H.shape)
+eee1=EE.imgfee(ee1[2],E,H.shape)
 #Now we can fit the second blob on the residual image:
 ee2=EE.Ellipse(H-eee1[0],E=E)
-eee2=EE.imgfee(ee2,E,H.shape)
+eee2=EE.imgfee(ee2[2],E,H.shape)
 
 #Lets see the results
 plt.figure()
