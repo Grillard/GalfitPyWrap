@@ -21,6 +21,7 @@ def CreateFile(Iimg, region, models, sky='Default', fout=None, **kwargs):
          9  : '1 1',         #  axis ratio (b/a)
         10  : '0 1',         #  position angle (PA) [deg: Up=0, Left=90]
         'Z' :  0}            #  output option (0 = resid., 1 = Don't subtract)
+        PLEASE be aware that if filenames are too long galfit will dump core! (psffile specifically!)
     '''
     if len(models) == 0:
         print 'Need at least one model!'
