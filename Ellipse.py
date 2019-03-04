@@ -317,9 +317,6 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
             xf=minimize(lambda x:tomin(Cteff[:,0],Cteff[:,1],[x[0],x[1],x[2],x[3],x[4]],[x3a['x'][3]-np.pi/2,x3a['x'][3]+np.pi/2]),np.append(x3a['x'],[0.]),method='Nelder-Mead',options={'maxiter':100000})
             r=gell(Cteff[:,0],Cteff[:,1],xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4])
         elif pick==2:
-            # x3a=minimize(lambda x:tomin2(Cteff[:,0],Cteff[:,1],[x[0],x[1],x[2],x[3],[x[4],x[5],x[6],x[7]]],[x2b['x'][3]-np.pi/2,x2b['x'][3]+np.pi/2]),np.append(x2b['x'],[0.,0.,0.,0.]),method='Powell',options={'maxiter':100000})
-            # xf=minimize(lambda x:tomin2(Cteff[:,0],Cteff[:,1],[x[0],x[1],x[2],x[3],[x[4],x[5],x[6],x[7]]],[x3a['x'][3]-np.pi/2,x3a['x'][3]+np.pi/2]),x3a['x'],method='Nelder-Mead',options={'maxiter':100000})
-            # r=gella4(Cteff[:,0],Cteff[:,1],xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[xf['x'][4],xf['x'][5],xf['x'][6],xf['x'][7]])
             x3a=minimize(lambda x:tomin2(Cteff[:,0],Cteff[:,1],[x[0],x[1],x[2],x[3],[0.,x[4],x[5],0.]],[x2b['x'][3]-np.pi/2,x2b['x'][3]+np.pi/2]),np.append(x2b['x'],[0.,0.]),method='Powell',options={'maxiter':100000})
             xf=minimize(lambda x:tomin2(Cteff[:,0],Cteff[:,1],[x[0],x[1],x[2],x[3],[0.,x[4],x[5],0.]],[x3a['x'][3]-np.pi/2,x3a['x'][3]+np.pi/2]),x3a['x'],method='Nelder-Mead',options={'maxiter':100000})
             r=gella4(Cteff[:,0],Cteff[:,1],xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[0.,xf['x'][4],xf['x'][5],0.])
@@ -328,15 +325,10 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
         y['y0'].append(xf['x'][1])
         y['q'].append(xf['x'][2])
         tt=xf['x'][3]
-        # while tt>np.pi/2 or tt<-np.pi/2:
-        #     if tt>np.pi/2:tt-=np.pi
-        #     elif tt<-np.pi/2:tt+=np.pi
         y['theta'].append(tt)
         if pick==1:
             y['c0'].append(xf['x'][4])
         elif pick==2:
-            # y['a4'].append(xf['x'][6])
-            # y['a'].append(xf['x'][4:])
             y['a4'].append(xf['x'][5])
             y['a'].append([0.,xf['x'][4],xf['x'][5],0.])
         y['val'].append(effpit(100-p))
@@ -352,11 +344,8 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
                 ri=gell(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4])
                 Ctf1=getell(np.median(r),xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4])
             elif pick==2:
-                # ri=gella4(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],xf['x'][4:])
                 ri=gella4(xx,yy,xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[0.,xf['x'][4],xf['x'][5],0.])
                 Ctf1=getella4(np.median(r),xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3],[0.,xf['x'][4],xf['x'][5],0.])
-            # v=np.median(r) if np.median(r)>np.min(ri) else (np.min(ri)+np.min(ri[ri>np.min(ri)]))/2 # argh...
-            # Ctf1=UU.getContours(ri,v,E)
             plt.imshow(np.arcsinh(sciimg),extent=E,origin='lower')
             plt.plot(Cteff[:,0],Cteff[:,1],color='red',lw=2)
             plt.plot(Ctf1[0],Ctf1[1],c='black',lw=1.)
