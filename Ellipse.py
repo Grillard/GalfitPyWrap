@@ -83,7 +83,7 @@ def eeint(y):
             ellarr2[key]=interp1d(np.append([0],y['r']),np.append([y[key][0]],y[key]))
     return ellarr2
 
-def imgfee(ee,E,sh,l0=500,intzoom=1,pick=1):
+def imgfee(ee,E,sh,l0=500,intzoom=1,pick=1,retmsk=False):
     #Create a 2D image from the output of Ellipse
     #E is the extent of the image
     #sh is the shape of the image
@@ -127,12 +127,18 @@ def imgfee(ee,E,sh,l0=500,intzoom=1,pick=1):
     # rieff=np.max(riall,0)
     #Curve of Growth
     cog={'r':r,'cl':[],'A':[]}#,'idxs':[]
+    if retmsk:cog['msk']=[]
     for rii in riall:
         ###
         idxs=(rii[0]!=0)
         cog['cl'].append(np.sum(rieff[rii[1]][idxs]))
         cog['A'].append(np.sum(idxs))
-        # cog['idxs'].append(idxs)
+        if retmsk:
+            a=np.zeros(rieff.shape)
+            t=np.zeros(np.sum(rii[1]))
+            t[idxs]=1.
+            a[rii[1]]=t
+            cog['msk'].append(a)
     for key in cog:cog[key]=np.array(cog[key])
     from scipy.ndimage import zoom
     rieffnew=zoom(rieff,1./intzoom)
