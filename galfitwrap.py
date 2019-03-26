@@ -158,28 +158,48 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
             print 'Something wrong here, no object at the center!'
         return np.ones(mskfit[0].shape), []
     '''this is the silliest way to do this'''
-    t = []
-    for el in np.where(mskfit[0].data.ravel() == idx)[0]:
-        elidx = np.unravel_index(el, mskfit[0].data.shape)
-        cutout=mskfit[0].data[elidx[0]-1:elidx[0] + 1, elidx[1]-1:elidx[1]+1].ravel()
-        for i in cutout:
-            if i not in t and i!=1 and i!=idx: t.append(i)
+    # t = []
+    # for el in np.where(mskfit[0].data.ravel() == idx)[0]:
+    #     elidx = np.unravel_index(el, mskfit[0].data.shape)
+    #     cutout=mskfit[0].data[elidx[0]-1:elidx[0] + 1, elidx[1]-1:elidx[1]+1].ravel()
+    #     for i in cutout:
+    #         if i not in t and i!=1 and i!=idx: t.append(i)
+    from scipy.signal import fftconvolve
+    tmsk=np.zeros(mskfit[0].data.shape).astype(int)
+    tmsk[mskfit[0].data==idx]=1
+    a=[[0,1,0],[1,1,1],[0,1,0]]
+    tmsk=np.round(fftconvolve(tmsk,a,mode='same'),1).astype(int)
+    tmsk[tmsk>0]=1
+    t=np.unique(mskfit[0].data*tmsk)
+    t=t[~np.isin(t,[0,1,idx],assume_unique=True)]
+
     ''''''
     others=np.unique(mskfit[0].data)
-    idxs=(others!=idx) & (others!=1)
-    for i in t:idxs=idxs & (others!=i)
-    others=others[idxs]
+    others=others[~np.isin(others,[1,idx]+list(t),assume_unique=True)]
+    # idxs=(others!=idx) & (others!=1)
+    # for i in t:idxs=idxs & (others!=i)
+    # others=others[idxs]
+
     torem = {0: [], 1: [idx], 2: t, 3:others}
     txt = {0:'',1: 'central', 2:'overlapping', 3:'other'}
     models = []
     for i in range(nrem+1):
-        for j in torem[i]:
-            amsk[mskfit[0].data == j] = j
-            jidx = np.where(sexcat['NUMBER'] == j-1)[0][0]
-            models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
-                           3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
-                           5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
-                           'mskidx': j,'origin':txt[i]})
+        a=np.isin(mskfit[0].data,torem[i])
+        amsk[a]=mskfit[0].data[a]
+        jidxs=np.array(torem[i])-2
+        #this is still slow, but I do not know how to create a list of dictionaries. And I need it because of how I defined the models outside.
+        #Does not make it right tho, but, it is not as bad as before :)
+        models.extend([{0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
+                       3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
+                       5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
+                       'mskidx': jidx+2,'origin':txt[i]} for jidx in jidxs])
+        # for j in torem[i]:
+        #     amsk[mskfit[0].data == j] = j
+        #     jidx = np.where(sexcat['NUMBER'] == j-1)[0][0]
+        #     models.append({0: 'sersic', 1: '{0} {1} 1 1'.format(sexcat['X_IMAGE'][jidx], sexcat['Y_IMAGE'][jidx]),
+        #                    3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
+        #                    5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
+        #                    'mskidx': j,'origin':txt[i]})
     if retfull:
         return amsk, models
     amsk[amsk!=0]=1
