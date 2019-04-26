@@ -15,6 +15,7 @@ H=h1+h2
 
 #now the fitting
 from GalfitPyWrap import Ellipse as EE
+E=[0,H.shape[0],0,H.shape[1]]
 ee=EE.Ellipse(H,E=E)
 eee=EE.imgfee(ee[2],E,H.shape)
 
