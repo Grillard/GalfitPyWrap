@@ -202,7 +202,7 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
         r,th=gell(x,y,x0,y0,q,theta,c0,reth=True)
         if (np.max(th)-np.min(th))/np.pi<1.7:return 1e100
         rm=np.median(r)
-        if rm>5*(np.max([np.max(x)-np.min(x),np.max(y)-np.min(y)])): return 1e100
+        # if rm>5*(np.max([np.max(x)-np.min(x),np.max(y)-np.min(y)])): return 1e100
         return np.sum((r-np.median(r))**2)
 
     def tomin2(x,y,P,T,X=None):
@@ -324,7 +324,7 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
             break
         if cen is not None and p==ps[0]:
             #Sometimes there is more than 1 contour to choose from at the beggining, right now the pick is random...
-            Ct=[C for C in Ct if np.sqrt(np.sum((np.median(C,0)-cen)**2))<np.sqrt(2)]
+            Ct=[C for C in Ct if np.sqrt(np.sum((np.median(C,0)-(np.array(cen)+0.5))**2))<np.sqrt(2)]
         ict=np.argmax([len(C) for C in Ct]) #picking the longest contour
         Cteff=Ct[ict]
 
@@ -406,7 +406,7 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
         thd=np.diff(th/np.pi)
         if np.abs(np.sum(thd[np.abs(thd)<0.8])-2)>0.5 or xf['fun']>1e99:
             print 'This fit is probably bad, continue'
-            break
+            # break
             continue
         #ENDTEST
         px0=[xf['x'][0],xf['x'][1],xf['x'][2],xf['x'][3]]
@@ -492,8 +492,11 @@ def Ellipse(sciimg,mskimg=None,ps=None,E=None,img=False,pick=1,extrapolate=0.,to
         pvn=1e100
         while True:
             # valm=np.median(sciimg[(mskimg==1) & (rl<rmax) & (rl>rmax-dr)]) #Minimize
-            valm=np.percentile(sciimg[(mskimg==1) & (rl<rmax) & (rl>rmax-dr)],[15.9,50.,84.1]) #Minimize
             n=len(np.where((mskimg==1) & (rl<rmax) & (rl>rmax-dr))[0])
+            if n==0:
+                print "something is wrong here, aborting extrapolation"
+                break
+            valm=np.percentile(sciimg[(mskimg==1) & (rl<rmax) & (rl>rmax-dr)],[15.9,50.,84.1]) #Minimize
             if valm[1]>extrapolate and (np.sqrt(valm[1])/n-pvn)/pvn<1.:
                 for key in keys:
                     if key=='r': y[key].append(rmax-dr/2)
