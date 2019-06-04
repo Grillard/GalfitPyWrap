@@ -182,9 +182,6 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
                        3: '{0} 1'.format(sexcat['MAG_AUTO'][jidx]), 4: '{0} 1'.format(sexcat['KRON_RADIUS'][jidx]*sexcat['B_IMAGE'][jidx]),
                        5: '4 1', 9: '{0} 1'.format(sexcat['ELONGATION'][jidx]**-1), 10: '{0} 1'.format(sexcat['THETA_IMAGE'][jidx]-90), 'Z': 0,
                        'mskidx': jidx+2,'origin':txt[i]} for jidx in jidxs])
-    if retfull:
-        return amsk, models
-    amsk[amsk!=0]=1
     if getsky:
         sexcat = pyfits.open("{0}.cat".format(out))[1].data[0][0]
         skyo={}
@@ -201,7 +198,12 @@ def sxmsk(scifile, infile, out='tsex', nrem=1, verb=True,retfull=False,center=No
                 t=l[10:].split()[0]
                 if '\'' in t: t=t.replace('\'','')
                 skyo['skystd']=float(t)
-        return amsk,models,skyo
+
+    if retfull:
+        if getsky:return amsk,models,skyo
+        return amsk, models
+    amsk[amsk!=0]=1
+    if getsky:return amsk,models,skyo
     return amsk, models
 
 
